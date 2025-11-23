@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>OpenCV.js – Operaciones aritméticas con imágenes</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Cargamos OpenCV.js desde la propia web de OpenCV -->
+  <script src="https://docs.opencv.org/3.4.0/opencv.js" type="text/javascript"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>OpenCV.js – Operaciones aritméticas</h1>
+    <p>Demo basada en los tutoriales de OpenCV (suma, resta, blend y operaciones bit a bit).</p>
+  </header>
+
+  <main>
+    <section class="inputs">
+      <div class="image-panel">
+        <h2>Imagen 1</h2>
+        <input type="file" id="fileInput1" accept="image/*" />
+        <canvas id="canvasInput1"></canvas>
+      </div>
+
+      <div class="image-panel">
+        <h2>Imagen 2</h2>
+        <input type="file" id="fileInput2" accept="image/*" />
+        <canvas id="canvasInput2"></canvas>
+      </div>
+    </section>
+
+    <section class="controls">
+      <h2>Operaciones</h2>
+      <div class="buttons">
+        <button id="btnAdd">Sumar (cv.add)</button>
+        <button id="btnSub">Restar (cv.subtract)</button>
+        <button id="btnAnd">AND (cv.bitwise_and)</button>
+        <button id="btnOr">OR (cv.bitwise_or)</button>
+        <button id="btnXor">XOR (cv.bitwise_xor)</button>
+      </div>
+
+      <div class="blend-control">
+        <label for="alphaSlider">
+          Blend (cv.addWeighted) – α:
+          <span id="alphaValue">0.50</span>
+        </label>
+        <input
+          type="range"
+          id="alphaSlider"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0.5"
+        />
+        <button id="btnBlend">Aplicar Blend</button>
+      </div>
+    </section>
+
+    <section class="output">
+      <h2>Resultado</h2>
+      <canvas id="canvasOutput"></canvas>
+    </section>
+
+    <section class="status">
+      <p id="status">Carga dos imágenes y selecciona una operación.</p>
+    </section>
+  </main>
+
+  <footer>
+    <small>
+      Demo educativa con OpenCV.js – basada en el tutorial de
+      <a href="https://docs.opencv.org/3.4/dd/d4d/tutorial_js_image_arithmetics.html" target="_blank" rel="noopener">
+        Arithmetic Operations on Images
+      </a>.
+    </small>
+  </footer>
+</body>
+</html>
