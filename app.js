@@ -4,6 +4,45 @@ const CANVAS_HEIGHT = 300;
 
 let image1Loaded = false;
 let image2Loaded = false;
+let widgetClicks = 0;
+function onOpenCvReady() {
+  loadCascadeFile()
+    .then(() => setStatus("OpenCV listo. Cascade cargado."))
+    .catch(() => setStatus("OpenCV listo, pero NO se pudo cargar el cascade."));
+}
+
+if (typeof cv !== "undefined") {
+  cv["onRuntimeInitialized"] = onOpenCvReady;
+}
+
+function getSessionId() {
+  const key = "sessionId";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now()) + Math.random();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+async function sendTelemetry(payload) {
+  try {
+    await fetch("/api/telemetry", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    console.warn("Telemetry failed:", e);
+  }
+}
+
+function updateTelemetryUI(extraText = "") {
+  const el = document.getElementById("telemetryInfo");
+  if (!el) return;
+  el.textContent = `Clicks: ${widgetClicks}. ${extraText}`.trim();
+}
+
 
 window.addEventListener("DOMContentLoaded", () => {
   const canvasIds = ["canvasInput1", "canvasInput2", "canvasOutput"];
@@ -11,7 +50,56 @@ window.addEventListener("DOMContentLoaded", () => {
     const c = document.getElementById(id);
     c.width = CANVAS_WIDTH;
     c.height = CANVAS_HEIGHT;
+    document.getElementById("btnFaceDetect").addEventListener("click", onFaceDetect);
+
   });
+
+  function onFaceDetect() {
+  if (!image1Loaded) {
+    alert("Carga primero la Imagen 1.");
+    return;
+  }
+  if (!faceClassifier) {
+    alert("El clasificador aún no está listo. Espera un momento y prueba otra vez.");
+    return;
+  }
+
+  const src = cv.imread("canvasInput1");
+  const gray = new cv.Mat();
+  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+  const faces = new cv.RectVector();
+  const msize = new cv.Size(0, 0);
+  faceClassifier.detectMultiScale(gray, faces, 1.1, 3, 0, msize, msize);
+
+  const facesCount = faces.size();
+
+  // dibujar rectángulos (opcional, pero ayuda a evidenciar)
+  for (let i = 0; i < facesCount; i++) {
+    const r = faces.get(i);
+    cv.rectangle(src, new cv.Point(r.x, r.y), new cv.Point(r.x + r.width, r.y + r.height), [255, 0, 0, 255], 2);
+  }
+
+  cv.imshow("canvasOutput", src);
+
+  // Telemetría
+  sendTelemetry({
+    type: "faces",
+    facesCount,
+    sessionId: getSessionId(),
+    ts: Date.now(),
+  });
+
+  updateTelemetryUI(`Caras detectadas (Imagen 1): ${facesCount}`);
+  setStatus(`Detección completada. Caras: ${facesCount}`);
+
+  // cleanup
+  src.delete();
+  gray.delete();
+  faces.delete();
+  msize.delete();
+}
+
 
   const fileInput1 = document.getElementById("fileInput1");
   const fileInput2 = document.getElementById("fileInput2");
@@ -24,12 +112,79 @@ window.addEventListener("DOMContentLoaded", () => {
   );
 
   // Botones de operaciones
-  document.getElementById("btnAdd").addEventListener("click", onAdd);
-  document.getElementById("btnSub").addEventListener("click", onSub);
-  document.getElementById("btnAnd").addEventListener("click", onAnd);
-  document.getElementById("btnOr").addEventListener("click", onOr);
-  document.getElementById("btnXor").addEventListener("click", onXor);
-  document.getElementById("btnBlend").addEventListener("click", onBlend);
+document.getElementById("btnAdd").addEventListener("click", async () => {
+  widgetClicks++;
+  updateTelemetryUI();
+  await sendTelemetry({
+    type: "widget",
+    widget: "btnAdd",
+    action: "click",
+    sessionId: getSessionId(),
+    ts: Date.now(),
+  });
+  onAdd();
+});
+document.getElementById("btnSub").addEventListener("click", async () => {
+  widgetClicks++;
+  updateTelemetryUI();
+  await sendTelemetry({
+    type: "widget",
+    widget: "btSub",
+    action: "click",
+    sessionId: getSessionId(),
+    ts: Date.now(),
+  });
+  onAdd();
+});
+document.getElementById("btnAnd").addEventListener("click", async () => {
+  widgetClicks++;
+  updateTelemetryUI();
+  await sendTelemetry({
+    type: "widget",
+    widget: "btnAnd",
+    action: "click",
+    sessionId: getSessionId(),
+    ts: Date.now(),
+  });
+  onAdd();
+});
+document.getElementById("btnnOr").addEventListener("click", async () => {
+  widgetClicks++;
+  updateTelemetryUI();
+  await sendTelemetry({
+    type: "widget",
+    widget: "btnnOr",
+    action: "click",
+    sessionId: getSessionId(),
+    ts: Date.now(),
+  });
+  onAdd();
+});
+document.getElementById("btnXor").addEventListener("click", async () => {
+  widgetClicks++;
+  updateTelemetryUI();
+  await sendTelemetry({
+    type: "widget",
+    widget: "btnXor",
+    action: "click",
+    sessionId: getSessionId(),
+    ts: Date.now(),
+  });
+  onAdd();
+});
+document.getElementById("btnBlend").addEventListener("click", async () => {
+  widgetClicks++;
+  updateTelemetryUI();
+  await sendTelemetry({
+    type: "widget",
+    widget: "btnBlend",
+    action: "click",
+    sessionId: getSessionId(),
+    ts: Date.now(),
+  });
+  onAdd();
+});
+
 
   // Slider de alpha
   const alphaSlider = document.getElementById("alphaSlider");
@@ -204,3 +359,36 @@ function onBlend() {
     )} y β=${beta.toFixed(2)}.`
   );
 }
+
+async function loadCascadeFile() {
+  const url = "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml";
+  const response = await fetch(url);
+  const data = new Uint8Array(await response.arrayBuffer());
+
+  cv.FS_createDataFile("/", "haarcascade_frontalface_default.xml", data, true, false, false);
+
+  faceClassifier = new cv.CascadeClassifier();
+  faceClassifier.load("haarcascade_frontalface_default.xml");
+}
+
+(async () => {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("prof") === "1") {
+    try {
+      await fetch("/api/prof-access", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ts: Date.now(),
+          sessionId: getSessionId(),
+          userAgent: navigator.userAgent,
+          path: window.location.pathname + window.location.search,
+        }),
+      });
+      setStatus("Acceso del profesor registrado.");
+    } catch (e) {
+      console.warn("No se pudo registrar acceso profesor:", e);
+    }
+  }
+})();
+
